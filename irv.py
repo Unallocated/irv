@@ -148,10 +148,13 @@ def create_election():
             candidate.position = position
     session.add(election)
     session.commit()
+    manage_url = url_for("manage_election", election_id=election.id, _external=True) + "#" + election_key
     mail.send(Message("Election Created",
         recipients=[request.json['admin_email']],
-        body=url_for("manage_election", election_id=election.id, _external=True) + "#" + election_key))
-    return ''
+        body=manage_url))
+    return jsonify({
+        "redirect": manage_url
+        })
 
 @app.route('/election/<int:election_id>/manage', methods = ['GET', 'POST'])
 def manage_election(election_id):

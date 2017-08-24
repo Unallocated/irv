@@ -139,6 +139,7 @@ $(function () {
                 positions: positions
             }),
             success: function (r) {
+                window.location = r.redirect;
             },
             error: function (r) {
                 alert(r);
