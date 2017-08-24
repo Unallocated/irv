@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block head %}
+<style>
+.sortable {
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    min-height: 20px;
+}
+</style>
+{% endblock head %}
+{% block body %}
+<h1>Vote</h1>
+{% for position in positions %}
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h4>{{ position }}</h4>
+        </div>
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <ul id="position-{{ position.id }}-from" class="position-{{ position.id }} sortable list-group">
+                    {% for candidate in position.candidates %}
+                        <li id="candidate_{{ candidate.id }}"
+                            class="list-group-item">{{ candidate }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul id="position-{{ position.id }}-to" class="position-{{ position.id }} sortable list-group">
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+<button id="submit" type="button" class="btn btn-primary">Submit</button>
+{% endblock body %}
+{% block script %}
+<script>
+$(function() {
+    {% for position in positions %}
+    $(".position-{{ position.id }}").sortable({ connectWith: ".position-{{ position.id }}" });
+    {% endfor %}
+    $('.sortable').disableSelection();
+});
+</script>
+{% endblock script %}

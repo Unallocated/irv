@@ -1,0 +1,4 @@
+flask
+sqlalchemy
+ldap3
+flask_mail

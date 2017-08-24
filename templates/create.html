@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Create Election</h1>
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h4>Election Information</h2>
+    </div>
+    <div class="panel-body">
+        <div id="election">
+                <input type="text" id="election-name" class="form-control" placeholder="Election Name">
+                <br>
+        </div>
+        <div class="btn-group btn-group-justified">
+            <div class="btn-group">
+                <button id="add-position" class="btn btn-primary">Add Position</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h4>Voter Information</h4>
+    </div>
+    <div class="panel-body">
+        <input type="email" id="admin-email" class="form-control" placeholder="Admin Email">
+        <br>
+        <ul id="email-list" class="list-group">
+        </ul>
+        <div class="btn-group btn-group-justified">
+            <div class="btn-group">
+                <button id="add-email" class="btn btn-primary">Add Voter Email</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="btn-group btn-group-justified">
+    <div class="btn-group">
+        <button id="submit" class="btn btn-success">Submit</button>
+    </div>
+</div>
+<br>
+{% endblock body %}
+{% block script %}
+<script>
+$(function () {
+    var addPosition = function () {
+        var panel = $('<div class="position panel panel-primary">');
+        var panelHeading = $('<div class="panel-heading">');
+        var panelBody = $('<div class="panel-body">');
+        panel.append(panelHeading);
+        panel.append(panelBody);
+        var name = $('<input type="text" class="position-name form-control" placeholder="Position Name">');
+        panelHeading.append(name);
+        var candidates = $('<ul class="list-group">');
+        panelBody.append(candidates);
+
+        var candidateBtnGroup = $('<div class="btn-group btn-group-justified">');
+        var addCandidateBtnGroup = $('<div class="btn-group">');
+        var addCandidateBtn = $('<button class="btn btn-primary">Add Candidate</button>');
+        addCandidateBtnGroup.append(addCandidateBtn);
+
+        var deletePositionBtnGroup = $('<div class="btn-group">');
+        var deletePositionBtn = $('<button class="btn btn-danger">Delete Position</button>');
+        deletePositionBtnGroup.append(deletePositionBtn);
+
+        candidateBtnGroup.append(addCandidateBtnGroup);
+        candidateBtnGroup.append(deletePositionBtnGroup);
+
+        panelBody.append(candidateBtnGroup);
+
+        var addCandidate = function () {
+            var candidate = $('<li class="list-group-item">');
+            var inputGroup = $('<div class="input-group">');
+            var input = $('<input type="text" class="candidate-name form-control" placeholder="Candidate Name">');
+            var inputGroupBtn = $('<span class="input-group-btn">');
+            var deleteBtn = $('<button class="btn btn-danger">Delete</button>');
+            deleteBtn.click(function (e) {
+                candidate.remove();
+            });
+            inputGroupBtn.append(deleteBtn);
+            inputGroup.append(input);
+            inputGroup.append(inputGroupBtn);
+            candidate.append(inputGroup);
+            candidates.append(candidate);
+            input.focus();
+        };
+        addCandidate();
+        addCandidateBtn.click(function (e) {
+            addCandidate();
+        });
+
+        deletePositionBtn.click(function(e) {
+            panel.remove();
+        });
+
+        $("#election").append(panel);
+    };
+    addPosition();
+    $("#add-position").click(function (e) {
+        addPosition();
+    });
+    var addEmail = function () {
+            var voter = $('<li class="list-group-item">');
+            var inputGroup = $('<div class="input-group">');
+            var input = $('<input type="text" class="candidate-name form-control" placeholder="Voter Email">');
+            var inputGroupBtn = $('<span class="input-group-btn">');
+            var deleteBtn = $('<button class="btn btn-danger">Delete</button>');
+            deleteBtn.click(function (e) {
+                voter.remove();
+            });
+            inputGroupBtn.append(deleteBtn);
+            inputGroup.append(input);
+            inputGroup.append(inputGroupBtn);
+            voter.append(inputGroup);
+            $("#email-list").append(voter);
+            input.focus();
+    };
+    addEmail();
+    $("#add-email").click(function (e) {
+        addEmail();
+    });
+    $("#submit").click(function (e) {
+        var name = $("#election-name").val();
+        var adminEmail = $("#admin-email").val();
+        var positions = $(".position").map(function (i, position) {
+            return {
+                name: $(position).find(".position-name").val(),
+                candidates: $(position).find(".candidate-name").map(function (i, candidate) {
+                    return $(candidate).val();
+                }).toArray()
+            };
+        }).toArray();
+        $.ajax({
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+                name: name,
+                admin_email: adminEmail,
+                positions: positions
+            }),
+            success: function (r) {
+            },
+            error: function (r) {
+                alert(r);
+            }
+        });
+    });
+});
+</script>
+{% endblock script %}

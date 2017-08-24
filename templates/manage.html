@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Manage Election</h1>
+<button id="end-election" class="btn btn-success">End Election</button>
+{% endblock body %}
+{% block script %}
+<script>
+$(function () {
+    $("#end-election").click(function (e) {
+        $.ajax({
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+                action: 'end-election',
+                key: location.hash.substr(1)
+            }),
+            success: function (r) {
+            },
+            error: function (r) {
+                alert(r);
+            }
+        });
+    });
+});
+</script>
+{% endblock script %}
