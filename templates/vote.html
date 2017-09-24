@@ -19,7 +19,7 @@
         <div class="panel-body">
             <div class="row">
                 <div class="col-md-6">
-                    <ul id="position-{{ position.id }}-from" class="position-{{ position.id }} sortable list-group">
+                    <ul id="position_{{ position.id }}_from" class="position_{{ position.id }} sortable list-group">
                     {% for candidate in position.candidates %}
                         <li id="candidate_{{ candidate.id }}"
                             class="list-group-item">{{ candidate }}</li>
@@ -27,7 +27,7 @@
                     </ul>
                 </div>
                 <div class="col-md-6">
-                    <ul id="position-{{ position.id }}-to" class="position-{{ position.id }} sortable list-group">
+                    <ul id="position_{{ position.id }}" class="position position_{{ position.id }} sortable list-group">
                     </ul>
                 </div>
             </div>
@@ -40,9 +40,33 @@
 <script>
 $(function() {
     {% for position in positions %}
-    $(".position-{{ position.id }}").sortable({ connectWith: ".position-{{ position.id }}" });
+    $(".position_{{ position.id }}").sortable({ connectWith: ".position_{{ position.id }}" });
     {% endfor %}
     $('.sortable').disableSelection();
+    $('#submit').click(function (e) {
+        var votes = $(".position");
+        $.ajax({
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+                votes: $(".position").map(function (i, e) {
+                    return {
+                        position_id: e.id.split('_')[1],
+                        candidate_ids: $(e).find("li").map(function (i, e) {
+                            return e.id.split('_')[1]
+                        }).toArray()
+                    };
+                }).toArray(),
+                key: location.hash.substr(1)
+            }),
+            success: function (r) {
+                window.location = r.redirect;
+            },
+            error: function (r) {
+                alert(r);
+            }
+        });
+    });
 });
 </script>
 {% endblock script %}

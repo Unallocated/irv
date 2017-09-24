@@ -102,7 +102,7 @@ $(function () {
     var addEmail = function () {
             var voter = $('<li class="list-group-item">');
             var inputGroup = $('<div class="input-group">');
-            var input = $('<input type="text" class="candidate-name form-control" placeholder="Voter Email">');
+            var input = $('<input type="text" class="voter-email form-control" placeholder="Voter Email">');
             var inputGroupBtn = $('<span class="input-group-btn">');
             var deleteBtn = $('<button class="btn btn-danger">Delete</button>');
             deleteBtn.click(function (e) {
@@ -122,6 +122,9 @@ $(function () {
     $("#submit").click(function (e) {
         var name = $("#election-name").val();
         var adminEmail = $("#admin-email").val();
+        var voterEmails = $(".voter-email").map(function (i, email) {
+            return $(email).val();
+        }).toArray();
         var positions = $(".position").map(function (i, position) {
             return {
                 name: $(position).find(".position-name").val(),
@@ -136,6 +139,7 @@ $(function () {
             data: JSON.stringify({
                 name: name,
                 admin_email: adminEmail,
+                voter_emails: voterEmails,
                 positions: positions
             }),
             success: function (r) {

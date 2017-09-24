@@ -5,7 +5,6 @@ from sqlalchemy import create_engine, Table, Column, Integer, String, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.orderinglist import ordering_list
-from werkzeug.security import generate_password_hash, check_password_hash
 from uuid import uuid4
 
 app = Flask(__name__)
@@ -45,11 +44,12 @@ class Election(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    key_hash = Column(String)
+    key = Column(String)
 
     positions = relationship('Position', order_by='Position.rank',
                                 collection_class=ordering_list('rank'),
                                 back_populates='election')
+    voters = relationship('Voter', back_populates='election')
 
     def __str__(self):
         return self.name
@@ -85,6 +85,7 @@ class Candidate(Base):
 class Vote(Base):
     __tablename__ = 'votes'
     __table_args__ = (
+            UniqueConstraint('voter_id', 'candidate_id', name='unique_rank_candidate'),
             UniqueConstraint('rank', 'candidate_id', name='unique_rank_candidate'),
             )
 
@@ -100,8 +101,10 @@ class Voter(Base):
     __tablename__ = 'voters'
 
     id = Column(Integer, primary_key=True)
-    key_hash = Column(String)
+    key = Column(String)
+    election_id = Column(Integer, ForeignKey('elections.id'))
 
+    election = relationship('Election', back_populates='voters')
     votes = relationship('Vote', back_populates='voter')
 
 Base.metadata.create_all(engine)
@@ -118,7 +121,7 @@ def create_election():
     {
         "name": "test election",
         "admin_email": "admin@example.com",
-        "emails": [
+        "voter_emails": [
             "user@example.com"
         ],
         "positions": [
@@ -136,8 +139,7 @@ def create_election():
 
     position_rank = 0
     election = Election(name=request.json['name'])
-    election_key = str(uuid4())
-    election.key_hash = generate_password_hash(election_key)
+    election.key = str(uuid4())
     for position_json in request.json['positions']:
         position = Position(name=position_json['name'])
         position.election = election
@@ -148,10 +150,22 @@ def create_election():
             candidate.position = position
     session.add(election)
     session.commit()
-    manage_url = url_for("manage_election", election_id=election.id, _external=True) + "#" + election_key
+    manage_url = url_for("manage_election", election_id=election.id,
+            _external=True) + "#" + election.key
     mail.send(Message("Election Created",
         recipients=[request.json['admin_email']],
         body=manage_url))
+    for email in request.json['voter_emails']:
+        voter = Voter()
+        voter.election = election
+        voter.key = str(uuid4())
+        voter_url = url_for("vote_election", election_id=election.id,
+                _external=True) + "#" + voter.key
+        mail.send(Message("Vote in New Election",
+            recipients=[email],
+            body=voter_url))
+    session.add(election)
+    session.commit()
     return jsonify({
         "redirect": manage_url
         })
@@ -168,11 +182,42 @@ def vote_election(election_id):
         positions = session.query(Position).\
                 filter(Position.election_id == election_id).\
                 all()
-
-        print(positions)
         return render_template('vote.html', positions=positions)
 
-    return ''
+    voter = session.query(Voter).\
+            filter(Voter.key == request.json['key']).\
+            filter(Voter.election_id == election_id).\
+            one()
+
+    old_votes = session.query(Vote).\
+            filter(Vote.voter==voter).\
+            join(Vote.candidate).\
+            join(Candidate.position).\
+            filter(Position.election_id==election_id).\
+            all()
+    for old_vote in old_votes:
+        session.delete(old_vote)
+    session.commit()
+
+    for ballot in request.json['votes']:
+        position = session.query(Position).\
+                filter(Position.id == ballot['position_id']).\
+                one()
+        rank = 1
+        for candidate_id in ballot['candidate_ids']:
+            vote = Vote(rank=rank, candidate_id=candidate_id, voter=voter)
+            rank += 1
+
+    session.add(voter)
+    session.commit()
+
+    return jsonify({
+        "redirect": url_for("results_election", election_id=election_id, _external=True)
+        })
+
+@app.route('/election/<int:election_id>/results', methods = ['GET'])
+def results_election(election_id):
+    return render_template('results.html')
 
 if __name__ == '__main__':
     app.run()
